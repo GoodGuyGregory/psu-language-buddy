@@ -4,6 +4,8 @@
 
 ### Contributors
 
+[GoodGuyGregory](https://github.com/GoodGuyGregory)
+
 
 
 ## Language Buddy 
