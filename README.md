@@ -1,12 +1,15 @@
-# Language Buddy Application - Portland State University 
+# Language Buddy
+### Portland State University Group Project
 
 
 ### Contributors
 Andrew Niven, Lee Hoang, Nicolas Oliver, Greg Witt, Bahareh Golchin
 
+[GoodGuyGregory](https://github.com/GoodGuyGregory)
 
 
-## Language Buddy 
+
+## About 
 
 
 
@@ -15,4 +18,6 @@ Andrew Niven, Lee Hoang, Nicolas Oliver, Greg Witt, Bahareh Golchin
 
 
 ## Documentation 
+
+[Tatoeba API](https://api.dev.tatoeba.org/unstable#?route=cmp--schemas-audio)
 
