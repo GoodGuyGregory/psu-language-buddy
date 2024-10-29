@@ -18,3 +18,5 @@
 
 ## Documentation 
 
+[Tatoeba API](https://api.dev.tatoeba.org/unstable#?route=cmp--schemas-audio)
+
