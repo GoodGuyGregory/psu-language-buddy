@@ -1,4 +1,4 @@
-# Language Buddy Application
+# Language Buddy
 ### Portland State University Group Project
 
 
@@ -8,7 +8,7 @@
 
 
 
-## Language Buddy 
+## About 
 
 
 
