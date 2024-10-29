@@ -1,4 +1,5 @@
-# Language Buddy Application - Portland State University 
+# Language Buddy Application
+### Portland State University Group Project
 
 
 ### Contributors
