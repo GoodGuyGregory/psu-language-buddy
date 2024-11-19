@@ -27,9 +27,14 @@ Install Python 3.10.11
 
 Create virtual environment using venv (more details to come)
 
-`pip install -r requirements.txt`
+Activate virtual environment
 
-`streamlit run app.py`
+```
+pip install -r requirements.txt
+
+streamlit run app.py
+```
+
 
 ## Documentation 
 
