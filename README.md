@@ -21,7 +21,15 @@ Andrew Niven, Lee Hoang, Nicolas Oliver, Greg Witt, Bahareh Golchin
 
 ## Installation 
 
+TBD
 
+Install Python 3.10.11
+
+Create virtual environment using venv (more details to come)
+
+`pip install -r requirements.txt`
+
+`streamlit run app.py`
 
 ## Documentation 
 
