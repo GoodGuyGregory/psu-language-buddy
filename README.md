@@ -21,17 +21,24 @@ TBD
 
 ## Installation 
 
-TBD
-
 Install Python 3.10.11
 
-Create virtual environment using venv (more details to come)
+Windows:
 
-Activate virtual environment
+```ps1
+# Create virtual environment using venv (more details to come)
+python -m ven venv
 
-```
+# Activate virtual environment
+.\venv\Scripts\activate.ps1
+
+# Install dependencies
 pip install -r requirements.txt
 
+# Export OpenAI API Key
+$env:OPENAI_API_KEY="sk-proj-xxxx"
+
+# Run the app
 streamlit run app.py
 ```
 
