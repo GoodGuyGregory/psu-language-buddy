@@ -27,7 +27,7 @@ Windows:
 
 ```ps1
 # Create virtual environment using venv (more details to come)
-python -m ven venv
+python -m venv venv
 
 # Activate virtual environment
 .\venv\Scripts\activate.ps1
@@ -47,3 +47,20 @@ streamlit run app.py
 
 [Tatoeba API](https://api.dev.tatoeba.org/unstable#?route=cmp--schemas-audio)
 
+## Troubleshooting
+
+### Allow external traffic to Streamlit app running locally
+
+This should be automatic, but if for some reason is not working,
+try this:
+
+In a powershell console with Admin privileges, do: 
+
+```ps1
+New-NetFirewallRule `
+    -DisplayName "Allow Inbound Traffic on Port 8501" `
+    -Direction Inbound `
+    -LocalPort 8501 `
+    -Protocol TCP `
+    -Action Allow
+```
