@@ -170,5 +170,14 @@ def main():
                 deck.add_note(note)
 
             genanki.Package(deck).write_to_file('anki.apkg')
+    
+    if os.path.exists('anki.apkg'):
+        with open('anki.apkg', 'rb') as file:
+            st.download_button(
+                label="Download Anki Deck",
+                data=file,
+                file_name='anki.apkg',
+                mime='application/octet-stream'
+            )
 
 main()
