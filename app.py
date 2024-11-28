@@ -128,6 +128,18 @@ def main():
     if table_rows:
         st.table(table_rows)
 
+        # Show cards
+        for table_row in table_rows:
+
+            # Using streamlit expander - built in
+            furigana_text = table_row['furigana']
+            if len(table_row['furigana']) <= 0:
+                furigana_text = "N/A"
+            with st.expander(f"Word: {table_row['word']} - Furigana: {furigana_text} - JLPT Level {str(table_row['level'])}"):
+                st.write(f"Romaji: {table_row['romaji']}")
+                st.write(f"Meaning: {table_row['meaning']}")
+
+
         if st.button("Ankify"):
             
             model = genanki.Model(
