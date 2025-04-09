@@ -18,6 +18,8 @@ def main():
     # Title
     st.title("Language Buddy")
 
+    st.sidebar("Placeholder")
+
     # Record audio
     # Example usage here: https://docs.streamlit.io/develop/api-reference/widgets/st.audio_input
     japanese_audio = st.audio_input("Record Japanese audio")
