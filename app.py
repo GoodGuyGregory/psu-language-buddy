@@ -18,7 +18,7 @@ def main():
     # Title
     st.title("Language Buddy")
 
-    st.sidebar("Placeholder")
+    st.sidebar.write("Placeholder")
 
     # Record audio
     # Example usage here: https://docs.streamlit.io/develop/api-reference/widgets/st.audio_input
