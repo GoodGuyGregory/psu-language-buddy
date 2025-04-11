@@ -18,6 +18,9 @@ def main():
     # Title
     st.title("Language Buddy")
 
+    st.write("This web application lets you study Japanese in a new way! You can record your dialogue and the app will generate flashcards based on words it finds. ")
+    
+
     st.sidebar.write("Placeholder")
 
     # Record audio
