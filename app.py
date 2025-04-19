@@ -10,6 +10,44 @@ import streamlit as st
 from openai import OpenAI
 import urllib
 
+import base64 # for converting the audio file to base64 encoded string
+
+# Given an audio file (recorded or uploaded) - have an AI model give feedback
+def provide_speech_feedback(openai, speech_file):
+    # Base 64 encode the audio file (using the bytes values) and decode using utf-8
+        encoded_audio = base64.b64encode(speech_file.getvalue()).decode('utf-8')
+
+        # Read the provided audio file after encoding it
+        feedback = openai.chat.completions.create(
+            model="gpt-4o-audio-preview", # Required for audio input
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                            # Text to prompt the model to evaluate the audio input
+                            {
+
+                                "type": "text",
+                                "text": "Tell me what is in this file, then provide feedback on how good the Japanese pronunciation in the uploaded audio file is. If you are unable to provide pronunciation feedback, tell me if the text has grammatical errors or misspelled words."
+                            },
+                            # Actual audio input - must be a base64 encoded string that is decoded
+                            {
+                                "type": "input_audio",
+                                "input_audio": {
+                                    "data": encoded_audio,
+                                    "format": "wav"
+                                }
+                            }
+                        ]
+                }
+            ]
+        )
+
+        # Show the pronunciation feedback to the user
+        st.write(feedback.choices[0].message.content)
+
+
+# Main function
 def main():
 
     # Create OpenAI Client
@@ -18,19 +56,26 @@ def main():
     # Title
     st.title("Language Buddy")
 
-    st.write("This web application lets you study Japanese in a new way! You can record your dialogue and the app will generate flashcards based on words it finds. ")
+    st.write("This web application lets you study Japanese in a new way! You can record or upload your dialogue and the app will generate flashcards based on words it finds. ")
     
+    # Sidebar
+    st.sidebar.write("Options")
+    audio_choice = st.sidebar.radio("You can record or upload audio of your Japanese speech:", ["Record", "Upload"])
 
-    st.sidebar.write("Placeholder")
-
-    # Record audio
+    # Record or upload audio
     # Example usage here: https://docs.streamlit.io/develop/api-reference/widgets/st.audio_input
-    japanese_audio = st.audio_input("Record Japanese audio")
+    if audio_choice == "Record":
+        japanese_audio = st.audio_input("Record Japanese audio")
+    else:
+        japanese_audio = st.file_uploader("Upload an audio file with your speech practice and check your pronunciation!", type=["mp3", "ogg", "wav"])
+    
+    # Variable definitions
     japanese_text = None
     english_text = None
     japanese_words = None
     table_rows = []
 
+    # If the user has uploaded or recorded audio, perform the actions below
     if japanese_audio:
 
         # Allow the user to playback the audio
@@ -44,6 +89,9 @@ def main():
 
         # Save the transcription
         japanese_text = transcription.text
+
+        # Provide speech feedback
+        provide_speech_feedback(openai, japanese_audio)
 
     if japanese_text:
 
