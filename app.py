@@ -13,7 +13,7 @@ import urllib
 import base64 # for converting the audio file to base64 encoded string
 
 # Given an audio file (recorded or uploaded) - have an AI model give feedback
-def provide_speech_feedback(openai, speech_file):
+def provide_speech_feedback(openai, speech_file, lang_name):
     # Base 64 encode the audio file (using the bytes values) and decode using utf-8
         encoded_audio = base64.b64encode(speech_file.getvalue()).decode('utf-8')
 
@@ -28,7 +28,7 @@ def provide_speech_feedback(openai, speech_file):
                             {
 
                                 "type": "text",
-                                "text": "Tell me what is in this file, then provide feedback on how good the Japanese pronunciation in the uploaded audio file is. If you are unable to provide pronunciation feedback, tell me if the text has grammatical errors or misspelled words."
+                                "text": f"Tell me what is in this file, then provide feedback on how good the {lang_name} pronunciation in the uploaded audio file is. If you are unable to provide pronunciation feedback, tell me if the text has grammatical errors or misspelled words."
                             },
                             # Actual audio input - must be a base64 encoded string that is decoded
                             {
@@ -50,22 +50,37 @@ def provide_speech_feedback(openai, speech_file):
 # Main function
 def main():
 
+    # Set page title
+    st.set_page_config(page_title="Language Buddy")
+
+
     # Create OpenAI Client
     openai = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+    
+    # Sidebar
+    st.sidebar.title("Options")
+
+    # Adjectives related to the language - for styling the app and for customizing the prompt
+    lang_name = "Japanese"
+    lang_choice = st.sidebar.selectbox("Select a language", ["Japanese", "TBD1", "TBD2"])
+
+    if lang_choice == "Japanese":
+        lang_name = "Japanese"
+    elif lang_choice == "TBD1":
+        lang_name = "TBD1"
+
+    audio_choice = st.sidebar.radio(f"You can record or upload audio of your {lang_name} speech:", ["Record", "Upload"])
 
     # Title
     st.title("Language Buddy")
 
-    st.write("This web application lets you study Japanese in a new way! You can record or upload your dialogue and the app will generate flashcards based on words it finds. ")
-    
-    # Sidebar
-    st.sidebar.write("Options")
-    audio_choice = st.sidebar.radio("You can record or upload audio of your Japanese speech:", ["Record", "Upload"])
+    st.write(f"This web application lets you study {lang_name} in a new way! You can record or upload your dialogue and the app will generate flashcards based on words it finds. ")
 
     # Record or upload audio
     # Example usage here: https://docs.streamlit.io/develop/api-reference/widgets/st.audio_input
     if audio_choice == "Record":
-        japanese_audio = st.audio_input("Record Japanese audio")
+        japanese_audio = st.audio_input(f"Record {lang_name} audio")
     else:
         japanese_audio = st.file_uploader("Upload an audio file with your speech practice and check your pronunciation!", type=["mp3", "ogg", "wav"])
     
@@ -91,7 +106,7 @@ def main():
         japanese_text = transcription.text
 
         # Provide speech feedback
-        provide_speech_feedback(openai, japanese_audio)
+        provide_speech_feedback(openai, japanese_audio, lang_name)
 
     if japanese_text:
 
@@ -120,7 +135,7 @@ def main():
                 {
                     "role": "system",
                     "content": (
-                        "Split the Japanese sentence provided by the user phrase into individual words, "
+                        f"Split the {lang_name} sentence provided by the user phrase into individual words, "
                         "and return a JSON Array where each element is a word. "
                         "Return only the JSON string and nothing else."
                     )
