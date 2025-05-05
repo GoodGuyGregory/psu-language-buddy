@@ -210,6 +210,7 @@ def main():
 
         if st.button("Ankify"):
             
+            # Define the genanki model with fields and templates
             model = genanki.Model(
                 1607392319,
                 'Simple Model',
@@ -229,11 +230,13 @@ def main():
                 ]
             )
 
+            # Create a deck with a specific ID and title
             deck = genanki.Deck(
                 2059400110,
                 'Japanese Words'
             )
 
+            # For each row in the table of words, create a flashcard
             for table_row in table_rows:
 
                 note = genanki.Note(
@@ -249,8 +252,10 @@ def main():
 
                 deck.add_note(note)
 
+            # Save the deck to an anki package file
             genanki.Package(deck).write_to_file('anki.apkg')
     
+    # Allow the user to download an anki package file
     if os.path.exists('anki.apkg'):
         with open('anki.apkg', 'rb') as file:
             st.download_button(
