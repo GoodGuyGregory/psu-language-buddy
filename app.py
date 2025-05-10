@@ -12,6 +12,69 @@ import urllib
 
 import base64 # for converting the audio file to base64 encoded string
 
+# Create an Anki deck for Japanese text
+def create_anki_deck(table_rows):
+    st.table(table_rows)
+
+    # Show cards
+    for table_row in table_rows:
+
+        # Using streamlit expander - built in
+        furigana_text = table_row['furigana']
+        if len(table_row['furigana']) <= 0:
+            furigana_text = "N/A"
+        with st.expander(f"Word: {table_row['word']} - Furigana: {furigana_text} - JLPT Level {str(table_row['level'])}"):
+            st.write(f"Romaji: {table_row['romaji']}")
+            st.write(f"Meaning: {table_row['meaning']}")
+
+
+    if st.button("Ankify"):
+        
+        # Define the genanki model with fields and templates
+        model = genanki.Model(
+            1607392319,
+            'Simple Model',
+            fields=[
+                {'name': 'Word'},
+                {'name': 'Meaning'},
+                {'name': 'Furigana'},
+                {'name': 'Romaji'},
+                {'name': 'Level'},
+            ],
+            templates=[
+                {
+                'name': 'Card 1',
+                'qfmt': 'Word: {{Word}} - Furigana: {{Furigana}} - JLPT Level: {{Level}}',
+                'afmt': '{{FrontSide}}<hr id="answer">Meaning: {{Meaning}} - Romaji: {{Romaji}}',
+                },
+            ]
+        )
+
+        # Create a deck with a specific ID and title
+        deck = genanki.Deck(
+            2059400110,
+            'Japanese Words'
+        )
+
+        # For each row in the table of words, create a flashcard
+        for table_row in table_rows:
+
+            note = genanki.Note(
+                model=model,
+                fields=[
+                    table_row['word'],
+                    table_row['meaning'],
+                    table_row['furigana'],
+                    table_row['romaji'],
+                    str(table_row['level'])
+                ]
+            )
+
+            deck.add_note(note)
+
+        # Save the deck to an anki package file
+        genanki.Package(deck).write_to_file('anki.apkg')
+
 # Given an audio file (recorded or uploaded) - have an AI model give feedback
 def provide_speech_feedback(openai, speech_file, lang_name):
     # Base 64 encode the audio file (using the bytes values) and decode using utf-8
@@ -108,6 +171,7 @@ def main():
         # Provide speech feedback
         provide_speech_feedback(openai, japanese_audio, lang_name)
 
+    # If there is text, show it and translate it to English
     if japanese_text:
 
         # Show Japanese text
@@ -156,6 +220,7 @@ def main():
             # Handle error
             st.error("Error parsing JSON response from OpenAI")
     
+    # Show English text if it is present
     if english_text:
         
         # Show English text
@@ -163,6 +228,7 @@ def main():
 
         # TODO: Save the Japanese and English text to a database
 
+    # If the words could be obtained, show them
     if japanese_words:
 
         # Remove repeated words
@@ -193,67 +259,9 @@ def main():
         # Save the table rows
         table_rows = _table_rows
 
+    # Create the Anki deck
     if table_rows:
-        st.table(table_rows)
-
-        # Show cards
-        for table_row in table_rows:
-
-            # Using streamlit expander - built in
-            furigana_text = table_row['furigana']
-            if len(table_row['furigana']) <= 0:
-                furigana_text = "N/A"
-            with st.expander(f"Word: {table_row['word']} - Furigana: {furigana_text} - JLPT Level {str(table_row['level'])}"):
-                st.write(f"Romaji: {table_row['romaji']}")
-                st.write(f"Meaning: {table_row['meaning']}")
-
-
-        if st.button("Ankify"):
-            
-            # Define the genanki model with fields and templates
-            model = genanki.Model(
-                1607392319,
-                'Simple Model',
-                fields=[
-                    {'name': 'Word'},
-                    {'name': 'Meaning'},
-                    {'name': 'Furigana'},
-                    {'name': 'Romaji'},
-                    {'name': 'Level'},
-                ],
-                templates=[
-                    {
-                    'name': 'Card 1',
-                    'qfmt': 'Word: {{Word}} - Furigana: {{Furigana}} - JLPT Level: {{Level}}',
-                    'afmt': '{{FrontSide}}<hr id="answer">Meaning: {{Meaning}} - Romaji: {{Romaji}}',
-                    },
-                ]
-            )
-
-            # Create a deck with a specific ID and title
-            deck = genanki.Deck(
-                2059400110,
-                'Japanese Words'
-            )
-
-            # For each row in the table of words, create a flashcard
-            for table_row in table_rows:
-
-                note = genanki.Note(
-                    model=model,
-                    fields=[
-                        table_row['word'],
-                        table_row['meaning'],
-                        table_row['furigana'],
-                        table_row['romaji'],
-                        str(table_row['level'])
-                    ]
-                )
-
-                deck.add_note(note)
-
-            # Save the deck to an anki package file
-            genanki.Package(deck).write_to_file('anki.apkg')
+        create_anki_deck(table_rows)
     
     # Allow the user to download an anki package file
     if os.path.exists('anki.apkg'):
