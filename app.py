@@ -12,6 +12,24 @@ import urllib
 
 import base64 # for converting the audio file to base64 encoded string
 
+# =============================================================================
+
+# Prepare session state variables
+if "audio" not in st.session_state: # Uploaded audio file
+    st.session_state.audio = None
+if "feedback" not in st.session_state: # Feedback from model
+    st.session_state.feedback = None
+if "transcription" not in st.session_state:
+    st.session_state.transcription = None
+if "table_rows" not in st.session_state: # Table rows
+    st.session_state.table_rows = None
+if "foreign_lang_text" not in st.session_state: # Foreign language text
+    st.session_state.foreign_lang_text = None
+if "english_text" not in st.session_state: # English text
+    st.session_state.english_text = None
+# =============================================================================
+
+
 # Create an Anki deck for Japanese text
 def create_anki_deck(table_rows):
     st.table(table_rows)
@@ -23,6 +41,8 @@ def create_anki_deck(table_rows):
         furigana_text = table_row['furigana']
         if len(table_row['furigana']) <= 0:
             furigana_text = "N/A"
+
+        # Add the Romaji and meaning columns
         with st.expander(f"Word: {table_row['word']} - Furigana: {furigana_text} - JLPT Level {str(table_row['level'])}"):
             st.write(f"Romaji: {table_row['romaji']}")
             st.write(f"Meaning: {table_row['meaning']}")
@@ -75,6 +95,9 @@ def create_anki_deck(table_rows):
         # Save the deck to an anki package file
         genanki.Package(deck).write_to_file('anki.apkg')
 
+# =============================================================================
+
+
 # Given an audio file (recorded or uploaded) - have an AI model give feedback
 def provide_speech_feedback(openai, speech_file, lang_name):
     # Base 64 encode the audio file (using the bytes values) and decode using utf-8
@@ -107,7 +130,8 @@ def provide_speech_feedback(openai, speech_file, lang_name):
         )
 
         # Show the pronunciation feedback to the user
-        st.write(feedback.choices[0].message.content)
+        return feedback.choices[0].message.content
+# =============================================================================
 
 
 # Main function
@@ -120,9 +144,12 @@ def main():
     # Create OpenAI Client
     openai = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-    
+    # =============================================================================
+
+
     # Sidebar
     st.sidebar.title("Options")
+
 
     # Adjectives related to the language - for styling the app and for customizing the prompt
     lang_name = "Japanese"
@@ -135,6 +162,8 @@ def main():
         lang_name = "TBD1"
 
     audio_choice = st.sidebar.radio(f"You can record or upload audio of your {lang_name} speech:", ["Record", "Upload"])
+
+    # =============================================================================
 
     # Title
     st.title("Language Buddy")
@@ -154,23 +183,34 @@ def main():
     foreign_lang_words = None
     table_rows = []
 
+    # =============================================================================
+
     # If the user has uploaded or recorded audio, perform the actions below
     if foreign_lang_audio:
 
-        # Allow the user to playback the audio
-        st.audio(foreign_lang_audio)
-        
-        # Transcribe foreign language audio to text
-        transcription = openai.audio.transcriptions.create(
-            file=foreign_lang_audio,
-            model="whisper-1",
-        )
+        # Update session state
+        st.session_state.audio = foreign_lang_audio
 
-        # Save the transcription
-        foreign_lang_text = transcription.text
+        # Allow the user to playback the audio
+        st.audio(st.session_state.audio)
+        
+        # Transcribe foreign language audio to text - 
+        if st.session_state.transcription == None:
+            st.session_state.transcription = openai.audio.transcriptions.create(
+                file=st.session_state.audio,
+                model="whisper-1",
+            )
+
+        # Save the transcription - this assumes the transcription succeeds
+        foreign_lang_text = st.session_state.transcription.text
 
         # Provide speech feedback
-        provide_speech_feedback(openai, foreign_lang_audio, lang_name)
+        if st.session_state.feedback == None:
+            st.session_state.feedback = provide_speech_feedback(openai, st.session_state.audio, lang_name)
+        st.write(st.session_state.feedback)
+
+    # For debugging purposes, print session state
+    #print(st.session_state)
 
     # If there is text, show it and translate it to English
     if foreign_lang_text:
@@ -179,19 +219,20 @@ def main():
         st.write(foreign_lang_text)
 
         # Translate foreign language text to English
-        translation = openai.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {"role": "system", "content": "Translate the sentence provided by the user to English."},
-                {
-                    "role": "user",
-                    "content": foreign_lang_text
-                }
-            ]
-        )
+        if st.session_state.english_text == None:
+            translation = openai.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {"role": "system", "content": "Translate the sentence provided by the user to English."},
+                    {
+                        "role": "user",
+                        "content": foreign_lang_text
+                    }
+                ]
+            )
 
-        # Save the translation
-        english_text = translation.choices[0].message.content
+            # Save the translation
+            st.session_state.english_text = translation.choices[0].message.content
 
         # Split translation into words
         words =  openai.chat.completions.create(
@@ -207,7 +248,7 @@ def main():
                 },
                 {
                     "role": "user",
-                    "content": foreign_lang_text
+                    "content": st.session_state.transcription.text
                 }
             ]
         )
@@ -222,10 +263,10 @@ def main():
             st.error("Error parsing JSON response from OpenAI")
     
     # Show English text if it is present
-    if english_text:
+    if st.session_state.english_text:
         
         # Show English text
-        st.write(english_text)
+        st.write(st.session_state.english_text)
 
         # TODO: Save the foreign language and English text to a database
 
@@ -239,39 +280,41 @@ def main():
         _table_rows = []
 
         # Iterate over words
-        for word in words:
+        if st.session_state.table_rows == None:
+            for word in words:
 
-            # Get JLPT classification
-            url = f"https://jlpt-vocab-api.vercel.app/api/words?word={urllib.parse.quote(word)}"
-            with urllib.request.urlopen(url) as response:
-                if response.status == 200:
-                    data = json.loads(response.read().decode())
+                # Get JLPT classification
+                url = f"https://jlpt-vocab-api.vercel.app/api/words?word={urllib.parse.quote(word)}"
+                with urllib.request.urlopen(url) as response:
+                    if response.status == 200:
+                        data = json.loads(response.read().decode())
+                        
+                        # Check if data is empty, and skip the empty ones
+                        if data["total"] == 0:
+                            continue
                     
-                    # Check if data is empty, and skip the empty ones
-                    if data["total"] == 0:
-                        continue
-                
-                    # Save the first result, ignore the rest
-                    _table_rows.append(data["words"][0])
+                        # Save the first result, ignore the rest
+                        _table_rows.append(data["words"][0])
 
-                else:
-                    st.error("Error parsing response from JLPT API")
-        
-        # Save the table rows
-        table_rows = _table_rows
+                    else:
+                        st.error("Error parsing response from JLPT API")
+            
+            # Save the table rows
+            st.session_state.table_rows = _table_rows
 
     # Create the Anki deck
-    if table_rows:
-        create_anki_deck(table_rows)
+    if st.session_state.table_rows:
+        create_anki_deck(st.session_state.table_rows)
     
-    # Allow the user to download an anki package file
-    if os.path.exists('anki.apkg'):
-        with open('anki.apkg', 'rb') as file:
-            st.download_button(
-                label="Download Anki Deck",
-                data=file,
-                file_name='anki.apkg',
-                mime='application/octet-stream'
-            )
+        # Allow the user to download an anki package file
+        if os.path.exists('anki.apkg'):
+            with open('anki.apkg', 'rb') as file:
+                st.download_button(
+                    label="Download Anki Deck",
+                    data=file,
+                    file_name='anki.apkg',
+                    mime='application/octet-stream'
+                )
 
+# Call main
 main()
