@@ -128,6 +128,7 @@ def main():
     lang_name = "Japanese"
     lang_choice = st.sidebar.selectbox("Select a language", ["Japanese", "TBD1", "TBD2"])
 
+    # Set the language name based on the user's choice.
     if lang_choice == "Japanese":
         lang_name = "Japanese"
     elif lang_choice == "TBD1":
@@ -143,48 +144,48 @@ def main():
     # Record or upload audio
     # Example usage here: https://docs.streamlit.io/develop/api-reference/widgets/st.audio_input
     if audio_choice == "Record":
-        japanese_audio = st.audio_input(f"Record {lang_name} audio")
+        foreign_lang_audio = st.audio_input(f"Record {lang_name} audio")
     else:
-        japanese_audio = st.file_uploader("Upload an audio file with your speech practice and check your pronunciation!", type=["mp3", "ogg", "wav"])
+        foreign_lang_audio = st.file_uploader("Upload an audio file with your speech practice and check your pronunciation!", type=["mp3", "ogg", "wav"])
     
     # Variable definitions
-    japanese_text = None
+    foreign_lang_text = None
     english_text = None
-    japanese_words = None
+    foreign_lang_words = None
     table_rows = []
 
     # If the user has uploaded or recorded audio, perform the actions below
-    if japanese_audio:
+    if foreign_lang_audio:
 
         # Allow the user to playback the audio
-        st.audio(japanese_audio)
+        st.audio(foreign_lang_audio)
         
-        # Transcribe Japanese audio to text
+        # Transcribe foreign language audio to text
         transcription = openai.audio.transcriptions.create(
-            file=japanese_audio,
+            file=foreign_lang_audio,
             model="whisper-1",
         )
 
         # Save the transcription
-        japanese_text = transcription.text
+        foreign_lang_text = transcription.text
 
         # Provide speech feedback
-        provide_speech_feedback(openai, japanese_audio, lang_name)
+        provide_speech_feedback(openai, foreign_lang_audio, lang_name)
 
     # If there is text, show it and translate it to English
-    if japanese_text:
+    if foreign_lang_text:
 
-        # Show Japanese text
-        st.write(japanese_text)
+        # Show foreign language text
+        st.write(foreign_lang_text)
 
-        # Translate Japanese text to English
+        # Translate foreign language text to English
         translation = openai.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
                 {"role": "system", "content": "Translate the sentence provided by the user to English."},
                 {
                     "role": "user",
-                    "content": japanese_text
+                    "content": foreign_lang_text
                 }
             ]
         )
@@ -206,7 +207,7 @@ def main():
                 },
                 {
                     "role": "user",
-                    "content": japanese_text
+                    "content": foreign_lang_text
                 }
             ]
         )
@@ -214,7 +215,7 @@ def main():
         # Save the words
         try:
             # Parse content as JSON
-            japanese_words = json.loads(words.choices[0].message.content)
+            foreign_lang_words = json.loads(words.choices[0].message.content)
         except json.JSONDecodeError:
             
             # Handle error
@@ -226,13 +227,13 @@ def main():
         # Show English text
         st.write(english_text)
 
-        # TODO: Save the Japanese and English text to a database
+        # TODO: Save the foreign language and English text to a database
 
     # If the words could be obtained, show them
-    if japanese_words:
+    if foreign_lang_words:
 
         # Remove repeated words
-        words = set(japanese_words)
+        words = set(foreign_lang_words)
 
         # Partial results
         _table_rows = []
