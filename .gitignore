@@ -1,3 +1,4 @@
 venv
 key
 anki.apkg
+*.duckdb

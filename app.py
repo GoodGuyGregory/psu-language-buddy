@@ -9,9 +9,12 @@ import genanki
 import streamlit as st
 from openai import OpenAI
 import urllib
+import duckdb # Import duckdb for database management
 
 import base64 # for converting the audio file to base64 encoded string
-
+# =============================================================================
+# Name of database
+db_name = "flashcards.duckdb"
 # =============================================================================
 
 # Prepare session state variables
@@ -136,7 +139,70 @@ def provide_speech_feedback(openai, speech_file, lang_name):
         # Show the pronunciation feedback to the user
         return feedback.choices[0].message.content
 # =============================================================================
+# Database functions (DuckDB)
 
+# Create the database of flashcards
+# This establishes a connection and creates flashcards.duckdb if the file is not already present
+# TODO
+def create_flashcards_DB():
+    # Create the DB if it doesn't already exist
+    if not os.path.exists(db_name):
+        con = duckdb.connect(database=db_name, read_only=False) # Connect to the DB
+        create_seq = "CREATE SEQUENCE increment_id START 1;" # Auto incrementing id
+        create_flashcards_table = """CREATE TABLE flashcards (
+            id INTEGER DEFAULT nextval('increment_id'),
+            word VARCHAR,
+            meaning VARCHAR,
+            furigana VARCHAR,
+            romaji VARCHAR,
+            level INTEGER,
+    
+        )""" # Each row must have an id that can be incremented. Note that I did not specify id as the PRIMARY KEY
+        con.execute(create_seq) # Create the sequence
+        con.execute(create_flashcards_table) # Create the table
+        con.close() # Close the connection
+    # If the DB already exists, do nothing
+    
+
+# Insert a new flashcard into the database
+# TODO
+def create_DB_entry(word, meaning, furigana, romaji, level):
+    con = duckdb.connect(database=db_name, read_only=False)
+    insert_flashcard = f"INSERT INTO flashcards BY POSITION (word, meaning, furigana, romaji, level) VALUES ('{word}', '{meaning}', '{furigana}', '{romaji}', {level});"
+    con.execute(insert_flashcard)
+    con.close()
+    
+
+# Read the entire database and show it
+# TODO
+def read_DB():
+    if os.path.exists(db_name):
+        con = duckdb.connect(database=db_name, read_only=False)
+        read_table = f"SELECT * FROM flashcards"
+        res = con.execute(read_table)
+        return res
+
+# Update a flashcard
+# TODO
+def update_DB_entry():
+    return
+
+# Delete a flashcard by id
+# TODO
+def delete_DB_entry(id):
+    con = duckdb.connect(database=db_name, read_only=False)
+    delete_entry = f"DELETE FROM flashcards WHERE id == {id};"
+    con.execute(delete_entry)
+
+# Delete the entire DB
+# This deletes the .duckdb file
+# WARNING - this cannot be undone!
+def delete_DB():
+    if os.path.exists(db_name):
+        os.remove(db_name)
+    
+
+# =============================================================================
 
 # Main function
 def main():
@@ -178,6 +244,42 @@ def main():
 
     audio_choice = st.sidebar.radio(f"You can record or upload audio of your {lang_name} speech:", ["Record", "Upload"])
 
+    # =============================================================================
+    # DEBUG CODE for testing database functions
+    view_flashcards = st.sidebar.toggle(f"Debug: View flashcards table", value=False)
+
+
+
+    # View the table and enable debugging
+    if view_flashcards == True:
+        flashcards_table = None
+
+        # Button for deleting the DB
+        # WARNING - THIS IS IRREVERSIBLE!
+        st.sidebar.info("Note: Deleting the DB cannot be undone!")
+        if st.sidebar.button("Delete DB"):
+            delete_DB()
+
+        # Create the DB and read it
+        if not os.path.exists(db_name):
+            create_flashcards_DB()
+            flashcards_table = read_DB()
+        else:
+            flashcards_table = read_DB()
+        
+        # Show the table
+        st.table(flashcards_table)
+        # Add an entry
+        if st.button("Add entry"):
+            create_DB_entry("Word1", "Meaning1", "Furigana1", "Romaji1", 5)
+            st.rerun() # Update table in real time
+        # Delete an entry
+        if st.button("Delete entry"):
+            delete_DB_entry(5)
+            print("entry deleted")
+            st.rerun()
+
+    # END DEBUG CODE
     # =============================================================================
 
     # Title
@@ -328,6 +430,10 @@ def main():
 
         # Create the Anki deck
         if st.session_state.table_rows:
+            # Attempt to create the flashcards DB
+            create_flashcards_DB()
+
+            # Create the anki deck
             create_anki_deck(st.session_state.table_rows)
         
             # Allow the user to download an anki package file
