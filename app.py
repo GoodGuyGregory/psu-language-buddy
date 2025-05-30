@@ -169,16 +169,17 @@ def create_flashcards_DB():
 def create_DB_entry(word, meaning, furigana, romaji, level):
     con = duckdb.connect(database=db_name, read_only=False)
     insert_flashcard = f"INSERT INTO flashcards BY POSITION (word, meaning, furigana, romaji, level) VALUES ('{word}', '{meaning}', '{furigana}', '{romaji}', {level});"
+    #print(insert_flashcard)
     con.execute(insert_flashcard)
     con.close()
     
 
-# Read the entire database and show it
+# Read the entire database and show it without the ID column
 # TODO
 def read_DB():
     if os.path.exists(db_name):
         con = duckdb.connect(database=db_name, read_only=False)
-        read_table = f"SELECT * FROM flashcards"
+        read_table = f"SELECT word, meaning, furigana, romaji, level FROM flashcards"
         res = con.execute(read_table)
         return res
 
@@ -432,6 +433,20 @@ def main():
         if st.session_state.table_rows:
             # Attempt to create the flashcards DB
             create_flashcards_DB()
+
+            for table_row in st.session_state.table_rows:
+                word = table_row['word']
+                meaning = table_row['meaning']
+                furigana = table_row['furigana']
+                romaji = table_row['romaji']
+                level = str(table_row['level'])
+
+                #print(f"{word}, {meaning}, {furigana}, {romaji}, {level}")
+
+                create_DB_entry(word, meaning, furigana, romaji, level)
+
+            flashcards_table = read_DB()
+            st.table(flashcards_table)
 
             # Create the anki deck
             create_anki_deck(st.session_state.table_rows)
