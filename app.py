@@ -39,7 +39,7 @@ if "language" not in st.session_state:
 
 # Create an Anki deck for Japanese text
 def create_anki_deck(table_rows):
-    st.table(table_rows)
+    #st.table(table_rows)
 
     # Show cards
     for table_row in table_rows:
@@ -182,6 +182,16 @@ def read_DB():
         read_table = f"SELECT word, meaning, furigana, romaji, level FROM flashcards"
         res = con.execute(read_table)
         return res
+    
+
+# Return the number of flashcards
+# https://duckdb.org/docs/stable/clients/python/conversion#pandas
+def count_flashcards():
+    con = duckdb.connect(database=db_name, read_only=False)
+    count_flashcards = f"SELECT count(*) FROM flashcards"
+    res = con.execute(count_flashcards).fetchdf() # Returns a duckdb connection object that can be turned into a table
+
+    return res
 
 # Update a flashcard
 # TODO
@@ -270,6 +280,12 @@ def main():
         
         # Show the table
         st.table(flashcards_table)
+
+        num_flashcards_tb = count_flashcards()
+        num_flashcards = num_flashcards_tb['count_star()'].values
+        st.write(f"Number of flashcards: {num_flashcards[-1]}")
+
+
         # Add an entry
         if st.button("Add entry"):
             create_DB_entry("Word1", "Meaning1", "Furigana1", "Romaji1", 5)
