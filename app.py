@@ -1,8 +1,30 @@
+"""
+    Language Buddy - a web application for language learning with flashcards
+    Copyright (C) 2025 Andrew Niven, Lee Hoang, Nicolas Oliver, Greg Witt, Bahareh Golchin
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+"""
+
 # Main application page
 # 11/18/2024
 #
 # Execute this application with streamlit run app.py
-
+# Run LibreTranslate in another terminal with libretranslate
+#
+# LibreTranslate API docs
+# https://libretranslate.com/docs/
+#
 import json
 import os
 import genanki
@@ -11,10 +33,13 @@ from openai import OpenAI
 import urllib
 import duckdb # Import duckdb for database management
 
+import requests # For LibreTranslate API calls
+
 import base64 # for converting the audio file to base64 encoded string
 # =============================================================================
 # Name of database
-db_name = "flashcards.duckdb"
+db_name_jp = "flashcards.duckdb" # For Japanese words
+db_name_es = "flashcards_es.duckdb" # For Spanish words
 # =============================================================================
 
 # Prepare session state variables
@@ -140,77 +165,124 @@ def provide_speech_feedback(openai, speech_file, lang_name):
         return feedback.choices[0].message.content
 # =============================================================================
 # Database functions (DuckDB)
+# 6/8/2025 - placed them in a class
 
-# Create the database of flashcards
-# This establishes a connection and creates flashcards.duckdb if the file is not already present
-# TODO
-def create_flashcards_DB():
-    # Create the DB if it doesn't already exist
-    if not os.path.exists(db_name):
-        con = duckdb.connect(database=db_name, read_only=False) # Connect to the DB
-        create_seq = "CREATE SEQUENCE increment_id START 1;" # Auto incrementing id
-        create_flashcards_table = """CREATE TABLE flashcards (
-            id INTEGER DEFAULT nextval('increment_id'),
-            word VARCHAR,
-            meaning VARCHAR,
-            furigana VARCHAR,
-            romaji VARCHAR,
-            level INTEGER,
-    
-        )""" # Each row must have an id that can be incremented. Note that I did not specify id as the PRIMARY KEY
-        con.execute(create_seq) # Create the sequence
-        con.execute(create_flashcards_table) # Create the table
-        con.close() # Close the connection
+class DuckDB_Table():
+    # Initialize the DB with the given DB name
+    def __init__(self, db_name):
+        self.db_name = db_name
+        self.table_name = "flashcards"
+        if db_name == db_name_jp:
+           self.table_name = "flashcards"
+        elif db_name == db_name_es:
+            self.table_name = "flashcards_ES" 
+
+    # Create the database of flashcards
+    # This establishes a connection and creates flashcards.duckdb if the file is not already present
+    # TODO
+    def create_flashcards_DB(self):
+        # Create the DB if it doesn't already exist
+        create_flashcards_table = ""
+        if not os.path.exists(self.db_name):
+            con = duckdb.connect(database=self.db_name, read_only=False) # Connect to the DB
+            create_seq = "CREATE SEQUENCE increment_id START 1;" # Auto incrementing id
+            # Depending on the language, set up the schema
+            if self.db_name == db_name_jp: # Japanese
+                create_flashcards_table = f"""CREATE TABLE {self.table_name} (
+                    id INTEGER DEFAULT nextval('increment_id'),
+                    word VARCHAR,
+                    meaning VARCHAR,
+                    furigana VARCHAR,
+                    romaji VARCHAR,
+                    level INTEGER,
+            
+                )""" # Each row must have an id that can be incremented. Note that I did not specify id as the PRIMARY KEY
+            elif self.db_name == db_name_es:
+                create_flashcards_table = f"""CREATE TABLE {self.table_name} (
+                    id INTEGER DEFAULT nextval('increment_id'),
+                    word VARCHAR,
+                    meaning VARCHAR,
+                )""" # Each row must have an id that can be incremented. Note that I did not specify id as the PRIMARY KEY
+            con.execute(create_seq) # Create the sequence
+            con.execute(create_flashcards_table) # Create the table
+            con.close() # Close the connection
     # If the DB already exists, do nothing
     
 
-# Insert a new flashcard into the database
-# TODO
-def create_DB_entry(word, meaning, furigana, romaji, level):
-    con = duckdb.connect(database=db_name, read_only=False)
-    insert_flashcard = f"INSERT INTO flashcards BY POSITION (word, meaning, furigana, romaji, level) VALUES ('{word}', '{meaning}', '{furigana}', '{romaji}', {level});"
-    #print(insert_flashcard)
-    con.execute(insert_flashcard)
-    con.close()
-    
+    # Insert a new flashcard into the database
+    # 6/8/2025 - placed into class, added self param, merged parameters into a single list argument
+    # 
+    #def create_DB_entry(self, word, meaning, furigana, romaji, level):
+    def create_DB_entry(self, word_params):
 
-# Read the entire database and show it without the ID column
-# TODO
-def read_DB():
-    if os.path.exists(db_name):
-        con = duckdb.connect(database=db_name, read_only=False)
-        read_table = f"SELECT word, meaning, furigana, romaji, level FROM flashcards"
-        res = con.execute(read_table)
+        # Extract parameters
+        word = word_params['word']
+        meaning = word_params['meaning']
+
+        con = duckdb.connect(database=self.db_name, read_only=False)
+        if self.db_name == db_name_jp:
+            # Extrac furigana, romaji, and level
+            furigana = word_params['furigana']
+            romaji = word_params['romaji']
+            level = word_params['level']
+            insert_flashcard = f"INSERT INTO {self.table_name} BY POSITION (word, meaning, furigana, romaji, level) VALUES ('{word}', '{meaning}', '{furigana}', '{romaji}', {level});"
+        else:
+            insert_flashcard = f"INSERT INTO {self.table_name} BY POSITION (word, meaning) VALUES ('{word}', '{meaning}');"
+        #print(insert_flashcard)
+        con.execute(insert_flashcard)
+        con.close()
+    
+    # Read the entire database and show it without the ID column
+    # TODO
+    def read_DB(self):
+        if os.path.exists(self.db_name):
+            read_table = ""
+            con = duckdb.connect(database=self.db_name, read_only=False)
+            if self.db_name == "flashcards.duckdb":
+                read_table = f"SELECT word, meaning, furigana, romaji, level FROM {self.table_name}"
+            else:
+                read_table = f"SELECT word, meaning FROM {self.table_name}"
+            res = con.execute(read_table)
+            return res
+    
+    # Return the number of flashcards
+    # https://duckdb.org/docs/stable/clients/python/conversion#pandas
+    def count_flashcards(self):
+        con = duckdb.connect(database=self.db_name, read_only=False)
+        #print(self.db_name)
+        if self.db_name == db_name_jp:
+            count_flashcards = f"SELECT count(*) FROM {self.table_name}"
+        else:
+            count_flashcards = f"SELECT count(*) FROM {self.table_name}"
+        #print(count_flashcards)
+        res = con.execute(count_flashcards).fetchdf() # Returns a duckdb connection object that can be turned into a table
+
         return res
-    
 
-# Return the number of flashcards
-# https://duckdb.org/docs/stable/clients/python/conversion#pandas
-def count_flashcards():
-    con = duckdb.connect(database=db_name, read_only=False)
-    count_flashcards = f"SELECT count(*) FROM flashcards"
-    res = con.execute(count_flashcards).fetchdf() # Returns a duckdb connection object that can be turned into a table
 
-    return res
+    # Update a flashcard
+    # TODO
+    def update_DB_entry(self):
+        return
 
-# Update a flashcard
-# TODO
-def update_DB_entry():
-    return
+    # Delete a flashcard by id
+    # TODO
+    def delete_DB_entry(self, id):
+        flashcards = ""
+        con = duckdb.connect(database=self.db_name, read_only=False)
+        if self.db_name == db_name_jp:
+            flashcards = "flashcards"
+        else:
+            flashcards = "flashcards_ES"
+        delete_entry = f"DELETE FROM {flashcards} WHERE id == {id};"
+        con.execute(delete_entry)
 
-# Delete a flashcard by id
-# TODO
-def delete_DB_entry(id):
-    con = duckdb.connect(database=db_name, read_only=False)
-    delete_entry = f"DELETE FROM flashcards WHERE id == {id};"
-    con.execute(delete_entry)
-
-# Delete the entire DB
-# This deletes the .duckdb file
-# WARNING - this cannot be undone!
-def delete_DB():
-    if os.path.exists(db_name):
-        os.remove(db_name)
+    # Delete the entire DB
+    # This deletes the .duckdb file
+    # WARNING - this cannot be undone!
+    def delete_DB(self):
+        if os.path.exists(self.db_name):
+            os.remove(self.db_name)
     
 
 # =============================================================================
@@ -233,25 +305,43 @@ def main():
 
 
     # Adjectives related to the language - for styling the app and for customizing the prompt
-    lang_name = "Japanese"
     lang_choice = st.sidebar.selectbox("Select a language", ["Japanese", "Spanish"])
+    lang_name = lang_choice
 
     # Set the language name based on the user's choice.
     # When the user switches languages, the session state should be cleared
+    db_table = None
+    db_lang = ""
+    print("BEFORE")
+    print(f"lang choice debug: {lang_choice}")
+    print(f"lang name debug: {lang_name}")
+    print(f"st session state language: {st.session_state.language}")
     if lang_choice == "Japanese":
-        if lang_name != "Japanese":
+        db_lang = db_name_jp
+        if st.session_state.language != "Japanese":
             # Clear session state
             for key in st.session_state.keys():
                 st.session_state[key] = None
             lang_name = "Japanese"
             st.session_state.language = "Japanese"
+            
     elif lang_choice == "Spanish":
-        if lang_name != "Spanish":
+        db_lang = db_name_es
+        if st.session_state.language != "Spanish":
             # Clear session state
             for key in st.session_state.keys():
                 st.session_state[key] = None
             lang_name = "Spanish"
             st.session_state.language = "Spanish"
+
+    print("AFTER")  
+    print(f"lang choice debug: {lang_choice}")
+    print(f"lang name debug: {lang_name}")
+    print(f"st session state language: {st.session_state.language}")
+            
+            
+    #print(f"db_lang: {db_lang}")
+    db_table = DuckDB_Table(db_lang)
 
     audio_choice = st.sidebar.radio(f"You can record or upload audio of your {lang_name} speech:", ["Record", "Upload"])
 
@@ -269,31 +359,38 @@ def main():
         # WARNING - THIS IS IRREVERSIBLE!
         st.sidebar.info("Note: Deleting the DB cannot be undone!")
         if st.sidebar.button("Delete DB"):
-            delete_DB()
+            db_table.delete_DB()
 
         # Create the DB and read it
-        if not os.path.exists(db_name):
-            create_flashcards_DB()
-            flashcards_table = read_DB()
+        #print(f"dbtable.db_name: {db_table.db_name}")
+        #print(f"Path exists: {os.path.exists(db_table.db_name)}" )
+        if not os.path.exists(db_table.db_name):
+            db_table.create_flashcards_DB()
+            flashcards_table = db_table.read_DB()
         else:
-            flashcards_table = read_DB()
+            flashcards_table = db_table.read_DB()
+
+        num_flashcards_tb = db_table.count_flashcards()
+        num_flashcards = num_flashcards_tb['count_star()'].values
         
         # Show the table
+        if st.session_state.language == "Spanish" and num_flashcards > 0:
+            st.info("The word(s) in the table were machine-translated. Please double check translations.")
         st.table(flashcards_table)
 
-        num_flashcards_tb = count_flashcards()
-        num_flashcards = num_flashcards_tb['count_star()'].values
+        
         st.write(f"Number of flashcards: {num_flashcards[-1]}")
 
 
         # Add an entry
         if st.button("Add entry"):
-            create_DB_entry("Word1", "Meaning1", "Furigana1", "Romaji1", 5)
+            data = {"word": "Word1", "meaning": "Meaning1", "furigana": "Furigana1", "romaji": "Romaji1", "level": 5}
+            db_table.create_DB_entry(word_params=data)
             st.rerun() # Update table in real time
         # Delete an entry
         if st.button("Delete entry"):
-            delete_DB_entry(5)
-            print("entry deleted")
+            db_table.delete_DB_entry(5)
+            #print("entry deleted")
             st.rerun()
 
     # END DEBUG CODE
@@ -307,9 +404,9 @@ def main():
     # Record or upload audio
     # Example usage here: https://docs.streamlit.io/develop/api-reference/widgets/st.audio_input
     if audio_choice == "Record":
-        foreign_lang_audio = st.audio_input(f"Record {lang_name} audio")
+        st.session_state.audio = st.audio_input(f"Record {lang_name} audio")
     else:
-        foreign_lang_audio = st.file_uploader("Upload an audio file with your speech practice and check your pronunciation!", type=["mp3", "ogg", "wav"])
+        st.session_state.audio = st.file_uploader("Upload an audio file with your speech practice and check your pronunciation!", type=["mp3", "ogg", "wav"])
     
     # Variable definitions
     foreign_lang_text = None
@@ -320,10 +417,14 @@ def main():
     # =============================================================================
 
     # If the user has uploaded or recorded audio, perform the actions below
-    if foreign_lang_audio:
+    # For debugging purposes, print session state
+    #print("***** Session state debug ******")
+    #print(st.session_state)
+    #print("***** END ******")
+    if st.session_state.audio != None:
 
         # Update session state
-        st.session_state.audio = foreign_lang_audio
+        #st.session_state.audio = foreign_lang_audio
 
         # Allow the user to playback the audio
         st.audio(st.session_state.audio)
@@ -341,10 +442,8 @@ def main():
         # Provide speech feedback
         if st.session_state.feedback == None:
             st.session_state.feedback = provide_speech_feedback(openai, st.session_state.audio, lang_name)
-        st.write(st.session_state.feedback)
+        st.write(f"Feedback: {st.session_state.feedback}")
 
-    # For debugging purposes, print session state
-    #print(st.session_state)
 
     # If there is text, show it and translate it to English
     if foreign_lang_text != None:
@@ -445,10 +544,11 @@ def main():
                 # Save the table rows
                 st.session_state.table_rows = _table_rows
 
-        # Create the Anki deck
+
+                # Create the Anki deck
         if st.session_state.table_rows:
             # Attempt to create the flashcards DB
-            create_flashcards_DB()
+            db_table.create_flashcards_DB()
 
             for table_row in st.session_state.table_rows:
                 word = table_row['word']
@@ -458,10 +558,11 @@ def main():
                 level = str(table_row['level'])
 
                 #print(f"{word}, {meaning}, {furigana}, {romaji}, {level}")
+                word_params = {"word": word, "meaning": meaning, "furigana": furigana, "romaji": romaji, "level": level}
+                db_table.create_DB_entry(word_params)
+                #db_table.create_DB_entry(word, meaning, furigana, romaji, level)
 
-                create_DB_entry(word, meaning, furigana, romaji, level)
-
-            flashcards_table = read_DB()
+            flashcards_table = db_table.read_DB()
             st.table(flashcards_table)
 
             # Create the anki deck
@@ -476,6 +577,62 @@ def main():
                         file_name='anki.apkg',
                         mime='application/octet-stream'
                     )
+    elif lang_name == "Spanish": # Uses LibreTranslate, which performs machine translation. 
+        if foreign_lang_words:
+
+            # Remove repeated words
+            words = set(foreign_lang_words)
+
+            # Partial results
+            _table_rows = []
+
+            # Iterate over words
+            if st.session_state.table_rows == None:
+                for word in words:
+                    url = f"http://127.0.0.1:5000/translate"
+
+                    # Attempt to translate every word, otherwise assume LibreTranslate is not running or not installed
+                    try:
+                        re = requests.post(url,
+                            data={
+                                "q": word,
+                                "source": "es",
+                                "target": "en",
+                            }
+                        )
+
+                        if re.status_code == 200:
+
+                            # Save the first result, ignore the rest
+                            text = re.json()
+                            st.write(text)
+                            #print(type(text))
+                            text = text["translatedText"]
+                            _table_rows.append({"word": word, "meaning": text})
+                        else:
+                            st.error("Unable to translate words. If you are not running LibreTranslate, please open a terminal and type libretranslate, then press enter.")
+                        # Save the table rows
+                        st.session_state.table_rows = _table_rows
+                    except Exception as e:
+                        st.error("It appears LibreTranslate is not running or it is not installed. If it is installed with pip install libretranslate, you can open another terminal and type \"libretranslate\"")
+                        break # Break if a single error is found
+
+            if st.session_state.table_rows:
+                #print(st.session_state.table_rows)
+                # Attempt to create the flashcards DB
+                db_table.create_flashcards_DB()
+
+                for table_row in st.session_state.table_rows:
+                    word = table_row['word']
+                    meaning = table_row['meaning']
+
+                    word_params = {"word": word, "meaning": meaning}
+                    db_table.create_DB_entry(word_params)
+
+                flashcards_table = db_table.read_DB()
+                st.table(flashcards_table)
+
+        
 
 # Call main
 main()

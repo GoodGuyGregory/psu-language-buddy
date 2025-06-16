@@ -40,6 +40,9 @@ $env:OPENAI_API_KEY="sk-proj-xxxx"
 
 # Run the app
 streamlit run app.py
+
+# Run LibreTranslate (use another terminal)
+libretranslate
 ```
 
 
@@ -64,3 +67,7 @@ New-NetFirewallRule `
     -Protocol TCP `
     -Action Allow
 ```
+
+## License
+
+[GNU Affero General Public License v3](https://www.gnu.org/licenses/agpl-3.0.en.html)
