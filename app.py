@@ -312,10 +312,6 @@ def main():
     # When the user switches languages, the session state should be cleared
     db_table = None
     db_lang = ""
-    print("BEFORE")
-    print(f"lang choice debug: {lang_choice}")
-    print(f"lang name debug: {lang_name}")
-    print(f"st session state language: {st.session_state.language}")
     if lang_choice == "Japanese":
         db_lang = db_name_jp
         if st.session_state.language != "Japanese":
@@ -395,6 +391,19 @@ def main():
 
     # END DEBUG CODE
     # =============================================================================
+    # Informational stuff
+    st.sidebar.info("Informational Links")
+    # Github Link
+    st.sidebar.write("You can view the source code for Language Buddy by clicking the button below.")
+    st.sidebar.link_button("View Source Code", "https://github.com/GoodGuyGregory/psu-language-buddy/tree/translate")
+
+    # LibreTranslate info
+    st.sidebar.write("This project requires the Python library for the free and open source LibreTranslate machine translation API.")
+    st.sidebar.write("Language Buddy is not officially associated with LibreTranslate or its products.")
+    st.sidebar.link_button("LibreTranslate official website", "https://libretranslate.com/")
+    st.sidebar.link_button("pypi.org link", "https://pypi.org/project/libretranslate/")
+    # =============================================================================
+
 
     # Title
     st.title("Language Buddy")
