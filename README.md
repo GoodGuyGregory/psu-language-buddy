@@ -68,6 +68,12 @@ New-NetFirewallRule `
     -Action Allow
 ```
 
+## Other
+
+This project uses LibreTranslate, which is a free and open source machine translation API. 
+You can find more information about it on [pypi.org](https://pypi.org/project/libretranslate/) and on the [official website](https://libretranslate.com/).
+The source code of LibreTranslate can be found on [GitHub.](https://github.com/LibreTranslate/LibreTranslate)
+
 ## License
 
 [GNU Affero General Public License v3](https://www.gnu.org/licenses/agpl-3.0.en.html)
