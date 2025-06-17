@@ -179,7 +179,6 @@ class DuckDB_Table():
 
     # Create the database of flashcards
     # This establishes a connection and creates flashcards.duckdb if the file is not already present
-    # TODO
     def create_flashcards_DB(self):
         # Create the DB if it doesn't already exist
         create_flashcards_table = ""
@@ -212,7 +211,6 @@ class DuckDB_Table():
     # Insert a new flashcard into the database
     # 6/8/2025 - placed into class, added self param, merged parameters into a single list argument
     # 
-    #def create_DB_entry(self, word, meaning, furigana, romaji, level):
     def create_DB_entry(self, word_params):
 
         # Extract parameters
@@ -221,14 +219,13 @@ class DuckDB_Table():
 
         con = duckdb.connect(database=self.db_name, read_only=False)
         if self.db_name == db_name_jp:
-            # Extrac furigana, romaji, and level
+            # Extract furigana, romaji, and level
             furigana = word_params['furigana']
             romaji = word_params['romaji']
             level = word_params['level']
             insert_flashcard = f"INSERT INTO {self.table_name} BY POSITION (word, meaning, furigana, romaji, level) VALUES ('{word}', '{meaning}', '{furigana}', '{romaji}', {level});"
         else:
             insert_flashcard = f"INSERT INTO {self.table_name} BY POSITION (word, meaning) VALUES ('{word}', '{meaning}');"
-        #print(insert_flashcard)
         con.execute(insert_flashcard)
         con.close()
     
@@ -249,12 +246,12 @@ class DuckDB_Table():
     # https://duckdb.org/docs/stable/clients/python/conversion#pandas
     def count_flashcards(self):
         con = duckdb.connect(database=self.db_name, read_only=False)
-        #print(self.db_name)
+
         if self.db_name == db_name_jp:
             count_flashcards = f"SELECT count(*) FROM {self.table_name}"
         else:
             count_flashcards = f"SELECT count(*) FROM {self.table_name}"
-        #print(count_flashcards)
+
         res = con.execute(count_flashcards).fetchdf() # Returns a duckdb connection object that can be turned into a table
 
         return res
@@ -330,13 +327,7 @@ def main():
             lang_name = "Spanish"
             st.session_state.language = "Spanish"
 
-    print("AFTER")  
-    print(f"lang choice debug: {lang_choice}")
-    print(f"lang name debug: {lang_name}")
-    print(f"st session state language: {st.session_state.language}")
-            
-            
-    #print(f"db_lang: {db_lang}")
+    # Create the DuckDB table
     db_table = DuckDB_Table(db_lang)
 
     audio_choice = st.sidebar.radio(f"You can record or upload audio of your {lang_name} speech:", ["Record", "Upload"])
@@ -344,8 +335,6 @@ def main():
     # =============================================================================
     # DEBUG CODE for testing database functions
     view_flashcards = st.sidebar.toggle(f"Debug: View flashcards table", value=False)
-
-
 
     # View the table and enable debugging
     if view_flashcards == True:
@@ -358,8 +347,6 @@ def main():
             db_table.delete_DB()
 
         # Create the DB and read it
-        #print(f"dbtable.db_name: {db_table.db_name}")
-        #print(f"Path exists: {os.path.exists(db_table.db_name)}" )
         if not os.path.exists(db_table.db_name):
             db_table.create_flashcards_DB()
             flashcards_table = db_table.read_DB()
@@ -371,7 +358,7 @@ def main():
         
         # Show the table
         if st.session_state.language == "Spanish" and num_flashcards > 0:
-            st.info("The word(s) in the table were machine-translated. Please double check translations.")
+            st.info("The word(s) in the table were machine-translated. Please double check translations with a native speaker.")
         st.table(flashcards_table)
 
         
@@ -386,7 +373,6 @@ def main():
         # Delete an entry
         if st.button("Delete entry"):
             db_table.delete_DB_entry(5)
-            #print("entry deleted")
             st.rerun()
 
     # END DEBUG CODE
@@ -426,10 +412,6 @@ def main():
     # =============================================================================
 
     # If the user has uploaded or recorded audio, perform the actions below
-    # For debugging purposes, print session state
-    #print("***** Session state debug ******")
-    #print(st.session_state)
-    #print("***** END ******")
     if st.session_state.audio != None:
 
         # Update session state
@@ -497,10 +479,6 @@ def main():
                     ]
                 )
 
-                # DEBUGGING CODE
-                #st.write(st.session_state.words.choices[0].message.content)
-                #print(type(st.session_state.words.choices[0].message.content))
-
                 # Save the words
                 try:
                     # Parse content as JSON
@@ -515,8 +493,6 @@ def main():
         
         # Show English text
         st.write(f"English text: {st.session_state.english_text}")
-
-        # TODO: Save the foreign language and English text to a database
 
     # If the words could be obtained, show them
     # This uses JLPT for Japanese words
@@ -566,10 +542,10 @@ def main():
                 romaji = table_row['romaji']
                 level = str(table_row['level'])
 
-                #print(f"{word}, {meaning}, {furigana}, {romaji}, {level}")
+                # Gather data for the flashcard and insert it
                 word_params = {"word": word, "meaning": meaning, "furigana": furigana, "romaji": romaji, "level": level}
                 db_table.create_DB_entry(word_params)
-                #db_table.create_DB_entry(word, meaning, furigana, romaji, level)
+
 
             flashcards_table = db_table.read_DB()
             st.table(flashcards_table)
@@ -614,20 +590,19 @@ def main():
 
                             # Save the first result, ignore the rest
                             text = re.json()
-                            st.write(text)
-                            #print(type(text))
+                            #st.write(text)
+
                             text = text["translatedText"]
                             _table_rows.append({"word": word, "meaning": text})
                         else:
-                            st.error("Unable to translate words. If you are not running LibreTranslate, please open a terminal and type libretranslate, then press enter.")
+                            st.error("Unable to translate words. If you are not running a local LibreTranslate server, please open a terminal and type libretranslate, then press enter.")
                         # Save the table rows
                         st.session_state.table_rows = _table_rows
                     except Exception as e:
-                        st.error("It appears LibreTranslate is not running or it is not installed. If it is installed with pip install libretranslate, you can open another terminal and type \"libretranslate\"")
+                        st.error("It appears a local LibreTranslate server is not running or it is not installed. If it is installed with \"pip install libretranslate\", you can open another terminal and type \"libretranslate\"")
                         break # Break if a single error is found
 
             if st.session_state.table_rows:
-                #print(st.session_state.table_rows)
                 # Attempt to create the flashcards DB
                 db_table.create_flashcards_DB()
 
