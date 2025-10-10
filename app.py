@@ -25,6 +25,8 @@
 # LibreTranslate API docs
 # https://libretranslate.com/docs/
 #
+
+# Library imports
 import json
 import os
 import genanki
