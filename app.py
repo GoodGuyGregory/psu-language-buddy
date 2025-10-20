@@ -27,14 +27,14 @@
 #
 
 # Library imports
-import json
-import os
-import genanki
-import streamlit as st
-from openai import OpenAI
-import urllib
-import requests # For LibreTranslate API calls
-import base64 # for converting the audio file to base64 encoded string
+import json                 # Managing JSON objects
+import os                   # Managing folders
+import genanki              # For all anki stuff
+import streamlit as st      # For running this web application
+from openai import OpenAI   # For OpenAI model calls
+import urllib               # For parsing URL data
+import requests             # For LibreTranslate API calls
+import base64               # for converting the audio file to base64 encoded string
 
 
 # Custom module imports
@@ -268,7 +268,7 @@ def main():
     st.sidebar.info("Informational Links")
     # Github Link
     st.sidebar.write("You can view the source code for Language Buddy by clicking the button below.")
-    st.sidebar.link_button("View Source Code", "https://github.com/GoodGuyGregory/psu-language-buddy/tree/translate")
+    st.sidebar.link_button("View Source Code", "https://github.com/GoodGuyGregory/psu-language-buddy/tree/bugfixing")
 
     # LibreTranslate info
     st.sidebar.write("This project requires the Python library for the free and open source LibreTranslate machine translation API.")
