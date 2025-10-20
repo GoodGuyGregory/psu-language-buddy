@@ -3,3 +3,4 @@ db
 key
 anki.apkg
 *.duckdb
+__pycache__
