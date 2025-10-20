@@ -24,6 +24,8 @@
 import streamlit as st
 from pages.duckdb_fc import flashcard_table 
 
+# ======================================================================
+
 # Name of database
 db_name_jp = "flashcards.duckdb" # For Japanese words
 db_name_es = "flashcards_es.duckdb" # For Spanish words
@@ -31,7 +33,6 @@ db_name_es = "flashcards_es.duckdb" # For Spanish words
 # ======================================================================
 
 db_lang = st.sidebar.selectbox("Select a language", [db_name_jp, db_name_es])
-#db_lang = db_name_jp
 
 db_table = flashcard_table.DuckDB_Table(db_lang)
 
@@ -39,6 +40,18 @@ db_table = flashcard_table.DuckDB_Table(db_lang)
 st.title("Flashcards Table")
 
 st.write("Here are the flashcards you have created so far.")
+
+# Informational stuff
+st.sidebar.info("Informational Links")
+# Github Link
+st.sidebar.write("You can view the source code for Language Buddy by clicking the button below.")
+st.sidebar.link_button("View Source Code", "https://github.com/GoodGuyGregory/psu-language-buddy/tree/bugfixing")
+
+# LibreTranslate info
+st.sidebar.write("This project requires the Python library for the free and open source LibreTranslate machine translation API.")
+st.sidebar.write("Language Buddy is not officially associated with LibreTranslate or its products.")
+st.sidebar.link_button("LibreTranslate official website", "https://libretranslate.com/")
+st.sidebar.link_button("pypi.org link", "https://pypi.org/project/libretranslate/")
 
 # Read the flashcards table and show it
 table = db_table.read_DB()
