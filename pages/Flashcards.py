@@ -55,4 +55,8 @@ st.sidebar.link_button("pypi.org link", "https://pypi.org/project/libretranslate
 
 # Read the flashcards table and show it
 table = db_table.read_DB()
-st.table(table)
+
+# Show an editable table
+# TODO - add delete button to delete selected rows
+# TODO - add edit button to save changes to the DB
+st.data_editor(table, num_rows="dynamic")
