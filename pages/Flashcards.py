@@ -18,6 +18,7 @@
 
 # This is a separate app page for showing the flashcards table and manipulating it in various ways
 # 10/10/2025
+# Some ideas are from https://discuss.streamlit.io/t/select-and-delete-row-in-st-data-editor-using-native-checkbox/92929
 
 
 # Imports
@@ -37,6 +38,10 @@ db_lang = st.sidebar.selectbox("Select a language", [db_name_jp, db_name_es])
 db_table = flashcard_table.DuckDB_Table(db_lang)
 
 # ======================================================================
+# Update the whole DB using the changes specified by the user
+def update_DB(duckdb_table, new_table):
+    duckdb_table.update_DB_editor(new_table)
+# ======================================================================
 st.title("Flashcards Table")
 
 st.write("Here are the flashcards you have created so far.")
@@ -54,9 +59,28 @@ st.sidebar.link_button("LibreTranslate official website", "https://libretranslat
 st.sidebar.link_button("pypi.org link", "https://pypi.org/project/libretranslate/")
 
 # Read the flashcards table and show it
-table = db_table.read_DB()
+try:
+    table = db_table.read_DB()
+except:
+    st.info(f"Table {db_table.table_name} does not exist for {db_table.db_name}")
+    #table = db_table.create_flashcards_DB()
+else:
 
-# Show an editable table
-# TODO - add delete button to delete selected rows
-# TODO - add edit button to save changes to the DB
-st.data_editor(table, num_rows="dynamic")
+    # Show an editable table
+    # TODO - add delete button to delete selected rows
+    df = st.data_editor(
+        table, 
+        num_rows="dynamic",
+        column_config={
+                "id": st.column_config.NumberColumn(disabled=False),
+                "Delete": st.column_config.CheckboxColumn("Delete")
+            }
+        )
+
+    # Update button
+    update_button = st.button("Update DB")
+
+    # If the button is pressed, update the DB with the changes shown in the data editor
+    if update_button:
+        # Update DB
+        update_DB(db_table, df)
