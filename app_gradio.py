@@ -99,13 +99,13 @@ with gr.Blocks(title="Language Buddy", analytics_enabled=False) as demo:
         gr.Markdown("# Informational Links")
         # Github Link
         gr.Markdown("You can view the source code for Language Buddy by clicking the button below.")
-        gr.Markdown("View Source Code: [Repo Link](https://github.com/GoodGuyGregory/psu-language-buddy/tree/bugfixing)")
+        gr.Button("View Source Code", link="https://github.com/GoodGuyGregory/psu-language-buddy/tree/bugfixing")
 
         # LibreTranslate info
         gr.Markdown("This project requires the Python library for the free and open source LibreTranslate machine translation API.")
         gr.Markdown("Language Buddy is not officially associated with LibreTranslate or its products.")
-        gr.Markdown("LibreTranslate official website: [Website](https://libretranslate.com/)")
-        gr.Markdown("pypi.org link: [pypi.org](https://pypi.org/project/libretranslate/)")
+        gr.Button("LibreTranslate official website", link="https://libretranslate.com/")
+        gr.Button("pypi.org link", link="https://pypi.org/project/libretranslate/")
 
 # =============================================================================
 # Launch the app and open a browser window automatically
