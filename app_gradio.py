@@ -44,10 +44,22 @@ import urllib               # For parsing URL data
 import requests             # For LibreTranslate API calls
 import base64               # for converting the audio file to base64 encoded string
 import gradio as gr         # For creating the Gradio UI
+import pandas as pd         # For handling pandas operations
+from dotenv import load_dotenv # For loading environment variables - see https://pypi.org/project/python-dotenv/
+import io
 
 # Custom module imports
 # DuckDB flashcard table
 from pages.duckdb_fc import flashcard_table
+# =============================================================================
+# Load the API key using dotenv
+load_dotenv(override=True)
+
+oai_api_key = os.getenv("OPENAI_API_KEY")
+
+# If the key cannot be found, show an error message
+if not oai_api_key:
+    print("No OpenAI API key was found. Please set an OpenAI API key in your .env file and reload the application.")
 
 # =============================================================================
 # Variables
@@ -57,17 +69,120 @@ languages = ['Japanese', 'Spanish']
 
 # =============================================================================
 
+
+# =============================================================================
+# Callback functions to load the dataframe
+def load_fc_table() -> gr.Dataframe:
+    """
+    Load a flashcard table.
+
+    Parameters:
+        None
+
+    Returns:
+        a Gradio dataframe object 
+    """
+    db = flashcard_table.DuckDB_Table("flashcards.duckdb") # Flashcard table with Japanese words
+    res = db.read_DB().df() # Read the DB and convert it to a dataframe
+    return gr.Dataframe(res) # Return a gradio DF object
+
+# =============================================================================
+
+# Given an audio file (recorded or uploaded) - have an AI model give feedback
+# Only text is returned. 
+def provide_speech_feedback(
+        openai: OpenAI, 
+        speech_file: io.BufferedReader, 
+        lang_name: str
+        ):
+    # Base 64 encode the audio file (using the bytes values) and decode using utf-8
+        encoded_audio = base64.b64encode(speech_file).decode('utf-8')
+
+        # Read the provided audio file after encoding it
+        feedback = openai.chat.completions.create(
+            model="gpt-4o-audio-preview", # Required for audio input
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                            # Text to prompt the model to evaluate the audio input
+                            {
+
+                                "type": "text",
+                                "text": f"Provide feedback on how good the {lang_name} pronunciation in the uploaded audio file is. If you are unable to provide pronunciation feedback, tell me if the text has grammatical errors or misspelled words."
+                            },
+                            # Actual audio input - must be a base64 encoded string that is decoded
+                            {
+                                "type": "input_audio",
+                                "input_audio": {
+                                    "data": encoded_audio,
+                                    "format": "wav"
+                                }
+                            }
+                        ]
+                }
+            ]
+        )
+
+        # Show the pronunciation feedback to the user
+        return feedback.choices[0].message.content
+
+
+
+# For the record/upload speech tab
+def process_audio_file(file, lang_name):
+    """
+    Process an audio file uploaded or recorded by the user.
+
+    """
+    # TODO
+
+    # https://numpy.org/doc/stable/reference/generated/numpy.ndarray.tobytes.html
+    # Read the file using Python's file open library
+    # https://platform.openai.com/docs/guides/speech-to-text#quickstart
+    audio_file_bytes = open(file, "rb")
+
+    # Create the OpenAI client
+    openai = OpenAI(api_key=oai_api_key)
+
+    # Transcribe the text
+    transcribed_text = "Placeholder"
+    try:
+        transcription = openai.audio.transcriptions.create(
+            file=audio_file_bytes,
+            model="gpt-4o-transcribe",
+        )
+        transcribed_text = transcription.text
+    except Exception as e:
+        print(e)
+        transcribed_text = f"Unable to generate transcription. Please try again.\n\n{e}"
+
+    # Provide feedback
+    feedback_text = "Feedback placeholder"
+    # try:
+    #     feedback_text = provide_speech_feedback(openai, audio_file_bytes.read(), lang_name)
+    # except Exception as e:
+    #     print(e)
+    #     feedback_text = f"Sorry, there was an error generating feedback. Please try again.\n\n{e}"
+
+    cleaned_filename = file.split("\\")[-1]
+
+    return gr.Textbox(f"{cleaned_filename}", label="Filename", interactive=False, visible=True), gr.Textbox(f"{transcribed_text}", label="Transcription", interactive=False, visible=True), gr.Textbox(f"{feedback_text}", label="Feedback", interactive=False, visible=True)
+
+
+
+# =============================================================================
 # Main UI for the application
 with gr.Blocks(title="Language Buddy", analytics_enabled=False) as demo:
 
     # Tab for recording or uploading a speech sample to have it analyzed.
     # TODO - add callback functions
     with gr.Tab("Record speech"):
+        # Flavor text
         gr.Markdown("# Language Buddy")
-
         gr.Markdown(f"This web application lets you study languages in a new way! You can record or upload your dialogue and the app will generate flashcards based on words it finds. ")
 
-
+        # Language dropdown and audio widget
         with gr.Row(equal_height=True):
 
             # Language selection dropdown menu
@@ -82,14 +197,32 @@ with gr.Blocks(title="Language Buddy", analytics_enabled=False) as demo:
                 audio = gr.Audio(
                     sources=['microphone', 'upload'], 
                     show_download_button=True, 
-                    show_share_button=False
+                    show_share_button=False,
+                    type='filepath'
                 )
+
+                filename = gr.Textbox(visible=False)
+
+        with gr.Row(equal_height=True):
+            transcription = gr.Textbox(visible=False)
+            feedback = gr.Textbox(visible=False)
+
+        # Callback functions
+        audio.change(
+            fn=process_audio_file,
+            inputs=[audio, selected_lang],
+            outputs=[filename, transcription, feedback]
+        )
 
     # Tab for viewing flashcards by language
     with gr.Tab("View flashcards"):
         gr.Markdown("# Flashcards Table")
 
-        # TODO - add callback functions
+        # Load the flashcard table from the DB
+        # Currently supports Japanese - Spanish support to come soon
+        flashcard_table_main = load_fc_table()
+
+
     
     # Sidebar
     with gr.Sidebar(position="left"):

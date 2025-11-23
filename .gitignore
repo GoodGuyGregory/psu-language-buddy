@@ -1,6 +1,7 @@
 venv
 db
 key
+.env
 anki.apkg
 *.duckdb
 *.duckdb.wal

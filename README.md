@@ -41,6 +41,9 @@ $env:OPENAI_API_KEY="sk-proj-xxxx"
 # Run the app
 streamlit run app.py
 
+# If using Gradio
+gradio app_gradio.py
+
 # Run LibreTranslate (use another terminal)
 libretranslate
 ```
