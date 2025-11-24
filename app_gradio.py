@@ -47,6 +47,7 @@ import gradio as gr         # For creating the Gradio UI
 import pandas as pd         # For handling pandas operations
 from dotenv import load_dotenv # For loading environment variables - see https://pypi.org/project/python-dotenv/
 import io
+from agents import Agent, Runner    # Agentic AI stuff
 
 # Custom module imports
 # DuckDB flashcard table
@@ -68,6 +69,19 @@ if not oai_api_key:
 languages = ['Japanese', 'Spanish']
 
 # =============================================================================
+# Agentic AI definitions
+# https://openai.github.io/openai-agents-python/quickstart/
+translation_agent = Agent(
+    name="Translation Agent",
+    instructions="You translate Japanese words to English. Explain how you arrived at the translation."
+)
+
+# Run the agent above to translate a word using an agent
+# Please keep in mind that the user needs to double check translations
+async def run_translation_agent(word: str):
+    result = await Runner.run(translation_agent, f"What is the English meaning of {word}?")
+    print(result)
+    return gr.Textbox(result, label="Here is the translation. Please double-check the result with a native speaker.", visible=True)
 
 
 # =============================================================================
@@ -84,7 +98,7 @@ def load_fc_table() -> gr.Dataframe:
     """
     db = flashcard_table.DuckDB_Table("flashcards.duckdb") # Flashcard table with Japanese words
     res = db.read_DB().df() # Read the DB and convert it to a dataframe
-    return gr.Dataframe(res) # Return a gradio DF object
+    return gr.Dataframe(res), res # Return a gradio DF object
 
 # =============================================================================
 
@@ -220,9 +234,27 @@ with gr.Blocks(title="Language Buddy", analytics_enabled=False) as demo:
 
         # Load the flashcard table from the DB
         # Currently supports Japanese - Spanish support to come soon
-        flashcard_table_main = load_fc_table()
+        flashcard_table_main, fc_table_df = load_fc_table()
 
+        # Create a dropdown menu
+        words = fc_table_df['word'].tolist()
+        with gr.Row(equal_height=True):
+            with gr.Column(scale=4):
+                # Show the list of words
+                word_selection = gr.Dropdown(words, interactive=True, label="Words")
 
+            # Agentic AI stuff
+            translate_button = gr.Button("Translate this word to English")
+
+        # Shows agent output
+        output = gr.Textbox(visible=False)
+
+        # Clicking the button calls the agent
+        translate_button.click(
+            fn=run_translation_agent,
+            inputs=[word_selection],
+            outputs=[output]
+        )
     
     # Sidebar
     with gr.Sidebar(position="left"):
