@@ -275,6 +275,9 @@ def main():
     st.sidebar.write("Language Buddy is not officially associated with LibreTranslate or its products.")
     st.sidebar.link_button("LibreTranslate official website", "https://libretranslate.com/")
     st.sidebar.link_button("pypi.org link", "https://pypi.org/project/libretranslate/")
+
+    # # Info about not recording or uploading unwanted or confidential info
+    st.sidebar.warning("Please do not record or upload unwanted or confidential information.")
     # =============================================================================
 
 

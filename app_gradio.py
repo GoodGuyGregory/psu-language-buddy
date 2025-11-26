@@ -272,6 +272,9 @@ with gr.Blocks(title="Language Buddy", analytics_enabled=False) as demo:
         gr.Button("LibreTranslate official website", link="https://libretranslate.com/")
         gr.Button("pypi.org link", link="https://pypi.org/project/libretranslate/")
 
+        # Info about not recording or uploading unwanted or confidential info
+        gr.Markdown("Please do not record or upload unwanted or confidential information.")
+
 # =============================================================================
 # Launch the app and open a browser window automatically
 if __name__ == "__main__":
