@@ -276,9 +276,12 @@ with gr.Blocks(title="Language Buddy", analytics_enabled=False) as demo:
         gr.Markdown("Please do not record or upload unwanted or confidential information.")
 
 # =============================================================================
-# Launch the app and open a browser window automatically
+# Launch the app
 if __name__ == "__main__":
     demo.launch(
-        inbrowser=True,
-        share=False,
+        inbrowser=True,             # Open a new browser window
+        share=False,                # Don't share the app by default. To make the app public, change this line to True
+        show_error=False,           # Set this to True for debugging purposes
+        server_name="127.0.0.1",    # Default server name
+        server_port=7860,           # Default server port
     )
