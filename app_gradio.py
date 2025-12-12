@@ -172,6 +172,7 @@ def process_audio_file(file, lang_name):
         transcribed_text = f"Unable to generate transcription. Please try again.\n\n{e}"
 
     # Provide feedback
+    # Not yet implemented
     feedback_text = "Feedback placeholder"
     # try:
     #     feedback_text = provide_speech_feedback(openai, audio_file_bytes.read(), lang_name)
