@@ -68,20 +68,45 @@ if not oai_api_key:
 # Languages to use
 languages = ['Japanese', 'Spanish']
 
+# Models to select
+model_list = ['gpt-4.1', 'gpt-4o', 'test model']
+
 # =============================================================================
 # Agentic AI definitions
 # https://openai.github.io/openai-agents-python/quickstart/
-translation_agent = Agent(
+# This agent is hardcoded to use gpt-4.1.
+translation_agent_openai = Agent(
     name="Translation Agent",
-    instructions="You translate Japanese words to English. Explain how you arrived at the translation."
+    instructions="You translate Japanese words to English. Provide your response as follows: <English Translation of Word>\n<Explain how you arrived at the translation.>",
+    model="gpt-4.1"
+)
+
+# This is another Agent that does the same thing as above but with GPT-4o
+translation_agent_openai_4o = Agent(
+    name="Translation Agent",
+    instructions="You translate Japanese words to English. Provide your response as follows: <English Translation of Word>\n<Explain how you arrived at the translation.>",
+    model="gpt-4o"
 )
 
 # Run the agent above to translate a word using an agent
 # Please keep in mind that the user needs to double check translations
-async def run_translation_agent(word: str):
-    result = await Runner.run(translation_agent, f"What is the English meaning of {word}?")
-    print(result)
-    return gr.Textbox(result, label="Here is the translation. Please double-check the result with a native speaker.", visible=True)
+async def run_translation_agent(word: str, model: str):
+    selected_agent = None
+    # Execute the agent
+    if model == "gpt-4.1": # If the user selected gpt-4.1, run this specific agent
+        selected_agent = translation_agent_openai
+    elif model == "gpt-4o":
+        selected_agent = translation_agent_openai_4o
+    else: # Unsupported model
+        return gr.Textbox("ERROR: This model is not supported. Please try a different model.", label="ERROR", visible=True)
+    
+    # Supported model - print the final output
+    result = await Runner.run(
+        selected_agent, 
+        f"What is the English meaning of {word}?"
+    )
+    print(result.final_output)
+    return gr.Textbox(result.final_output, label="Here is the translation. Please double-check the result with a native speaker.", visible=True)
 
 
 # =============================================================================
@@ -244,8 +269,12 @@ with gr.Blocks(title="Language Buddy", analytics_enabled=False) as demo:
                 # Show the list of words
                 word_selection = gr.Dropdown(words, interactive=True, label="Words")
 
+            with gr.Column(scale=3):
+                model_selection = gr.Dropdown(model_list, interactive=True, label="Model")
+
             # Agentic AI stuff
-            translate_button = gr.Button("Translate this word to English")
+            with gr.Column(scale=1):
+                translate_button = gr.Button("Translate this word to English")
 
         # Shows agent output
         output = gr.Textbox(visible=False)
@@ -253,7 +282,7 @@ with gr.Blocks(title="Language Buddy", analytics_enabled=False) as demo:
         # Clicking the button calls the agent
         translate_button.click(
             fn=run_translation_agent,
-            inputs=[word_selection],
+            inputs=[word_selection, model_selection],
             outputs=[output]
         )
     
