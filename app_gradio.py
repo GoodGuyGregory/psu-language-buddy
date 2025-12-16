@@ -48,6 +48,7 @@ import pandas as pd         # For handling pandas operations
 from dotenv import load_dotenv # For loading environment variables - see https://pypi.org/project/python-dotenv/
 import io
 from agents import Agent, Runner    # Agentic AI stuff
+from agents.extensions.models.litellm_model import LitellmModel # For using other models
 
 # Custom module imports
 # DuckDB flashcard table
@@ -57,10 +58,14 @@ from pages.duckdb_fc import flashcard_table
 load_dotenv(override=True)
 
 oai_api_key = os.getenv("OPENAI_API_KEY")
+anthropic_api_key = os.getenv("ANTHROPIC_API_KEY")
 
 # If the key cannot be found, show an error message
 if not oai_api_key:
     print("No OpenAI API key was found. Please set an OpenAI API key in your .env file and reload the application.")
+
+if not anthropic_api_key:
+    print("No Anthropic API key was found. Please set an Anthropic API key in your .env file and reload the application.")
 
 # =============================================================================
 # Variables
@@ -69,7 +74,7 @@ if not oai_api_key:
 languages = ['Japanese', 'Spanish']
 
 # Models to select
-model_list = ['gpt-4.1', 'gpt-4o', 'test model']
+model_list = ['gpt-4.1', 'gpt-4o', "claude-sonnet-4.5", 'test model']
 
 # =============================================================================
 # Agentic AI definitions
@@ -88,6 +93,14 @@ translation_agent_openai_4o = Agent(
     model="gpt-4o"
 )
 
+# This is another Agent that does the same thing as above but with an Anthropic model
+#https://openai.github.io/openai-agents-python/models/litellm/
+translation_agent_claude = Agent(
+    name="Translation Agent",
+    instructions="You translate Japanese words to English. Provide your response as follows: <English Translation of Word>\n<Explain how you arrived at the translation.>",
+    model=LitellmModel(model="anthropic/claude-sonnet-4-5-20250929", api_key=anthropic_api_key)
+)
+
 # Run the agent above to translate a word using an agent
 # Please keep in mind that the user needs to double check translations
 async def run_translation_agent(word: str, model: str):
@@ -97,6 +110,8 @@ async def run_translation_agent(word: str, model: str):
         selected_agent = translation_agent_openai
     elif model == "gpt-4o":
         selected_agent = translation_agent_openai_4o
+    elif model == "claude-sonnet-4.5":
+        selected_agent = translation_agent_claude
     else: # Unsupported model
         return gr.Textbox("ERROR: This model is not supported. Please try a different model.", label="ERROR", visible=True)
     
