@@ -19,12 +19,15 @@
 # This is a separate app page for showing the flashcards table and manipulating it in various ways
 # 10/10/2025
 # Some ideas are from https://discuss.streamlit.io/t/select-and-delete-row-in-st-data-editor-using-native-checkbox/92929
-
+#
+# Requires Anthropic API key and OpenAI API key to be defined in the user's environment variables.
 
 # Imports
 import streamlit as st
 from pages.duckdb_fc import flashcard_table 
-
+from agents import Agent, Runner    # Agentic AI stuff
+from agents.extensions.models.litellm_model import LitellmModel # For using other models
+import os
 # ======================================================================
 
 # Name of database
@@ -38,10 +41,70 @@ db_lang = st.sidebar.selectbox("Select a language", [db_name_jp, db_name_es])
 db_table = flashcard_table.DuckDB_Table(db_lang)
 
 # ======================================================================
+
+
+# =============================================================================
+# Agentic AI definitions
+# https://openai.github.io/openai-agents-python/quickstart/
+# This agent is hardcoded to use gpt-4.1.
+translation_agent_openai = Agent(
+    name="Translation Agent",
+    instructions="You translate Japanese words to English. Provide your response as follows: <English Translation of Word>\n<Explain how you arrived at the translation.>",
+    model="gpt-4.1"
+)
+
+# This is another Agent that does the same thing as above but with GPT-4o
+translation_agent_openai_4o = Agent(
+    name="Translation Agent",
+    instructions="You translate Japanese words to English. Provide your response as follows: <English Translation of Word>\n<Explain how you arrived at the translation.>",
+    model="gpt-4o"
+)
+
+# This is another Agent that does the same thing as above but with an Anthropic model
+#https://openai.github.io/openai-agents-python/models/litellm/
+translation_agent_claude = Agent(
+    name="Translation Agent",
+    instructions="You translate Japanese words to English. Provide your response as follows: <English Translation of Word>\n<Explain how you arrived at the translation.>",
+    model=LitellmModel(model="anthropic/claude-sonnet-4-5-20250929", api_key=os.getenv("ANTHROPIC_API_KEY"))
+)
+
+# Run the agent above to translate a word using an agent
+# Please keep in mind that the user needs to double check translations
+def run_translation_agent(word: str, model: str):
+    selected_agent = None
+    # Execute the agent
+    if model == "gpt-4.1": # If the user selected gpt-4.1, run this specific agent
+        selected_agent = translation_agent_openai
+    elif model == "gpt-4o":
+        selected_agent = translation_agent_openai_4o
+    elif model == "claude-sonnet-4.5":
+        selected_agent = translation_agent_claude
+    else: # Unsupported model
+        st.error("ERROR: This model is not supported. Please try a different model.")
+        return 
+    
+    # Supported model - print the final output
+    # This uses run_sync because the async keyword does not work with my Streamlit app
+    result = Runner.run_sync(
+        selected_agent, 
+        f"What is the English meaning of {word}?"
+    )
+    print(result.final_output)
+    st.write("Here is the translation. Please double-check the result with a native speaker.")
+    st.write(result.final_output)
+    return
+
+
+# Models to select
+model_list = ['gpt-4.1', 'gpt-4o', "claude-sonnet-4.5", 'test model']
+
+
+# ======================================================================
 # Update the whole DB using the changes specified by the user
 def update_DB(duckdb_table, new_table):
     duckdb_table.update_DB_editor(new_table)
 # ======================================================================
+
 st.title("Flashcards Table")
 
 st.write("Here are the flashcards you have created so far.")
@@ -84,3 +147,12 @@ else:
     if update_button:
         # Update DB
         update_DB(db_table, df)
+
+
+    # Agentic AI stuff
+    word = st.selectbox("Select a word", df['word'])
+    agentic_model = st.selectbox("Select a model", model_list)
+    agentic_translate_button = st.button("Translate word")
+
+    if agentic_translate_button:
+        run_translation_agent(word, agentic_model)
