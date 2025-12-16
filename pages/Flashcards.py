@@ -146,7 +146,9 @@ else:
     # If the button is pressed, update the DB with the changes shown in the data editor
     if update_button:
         # Update DB
-        update_DB(db_table, df)
+        # Do not include rows that have the Delete checkbox
+        modified_df = df[df["delete"] == False]
+        update_DB(duckdb_table=db_table, new_table=modified_df)
 
 
     # Agentic AI stuff
