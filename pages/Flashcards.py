@@ -23,11 +23,11 @@
 # Requires Anthropic API key and OpenAI API key to be defined in the user's environment variables.
 
 # Imports
-import streamlit as st
-from pages.duckdb_fc import flashcard_table 
-from agents import Agent, Runner    # Agentic AI stuff
+import streamlit as st                                          # For the Web UI
+from pages.duckdb_fc import flashcard_table                     # DuckDB table
+from agents import Agent, Runner                                # Agentic AI stuff
 from agents.extensions.models.litellm_model import LitellmModel # For using other models
-import os
+import os                                                       # For getting environment variables
 # ======================================================================
 
 # Name of database
@@ -61,11 +61,15 @@ translation_agent_openai_4o = Agent(
 )
 
 # This is another Agent that does the same thing as above but with an Anthropic model
-#https://openai.github.io/openai-agents-python/models/litellm/
+# https://openai.github.io/openai-agents-python/models/litellm/
+# An Anthropic API key is required
 translation_agent_claude = Agent(
     name="Translation Agent",
     instructions="You translate Japanese words to English. Provide your response as follows: <English Translation of Word>\n<Explain how you arrived at the translation.>",
-    model=LitellmModel(model="anthropic/claude-sonnet-4-5-20250929", api_key=os.getenv("ANTHROPIC_API_KEY"))
+    model=LitellmModel(
+        model="anthropic/claude-sonnet-4-5-20250929", 
+        api_key=os.getenv("ANTHROPIC_API_KEY")
+    )
 )
 
 # Run the agent above to translate a word using an agent
@@ -132,7 +136,7 @@ else:
     # Only show certain buttons when the database is populated
 
     # Show an editable table
-    # TODO - add delete button to delete selected rows
+    # Deleting entries is done by checking the Delete checkbox
     df = st.data_editor(
         table, 
         num_rows="dynamic",

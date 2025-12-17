@@ -35,20 +35,20 @@
 # =============================================================================
 
 # Library imports
-import json                 # Managing JSON objects
-import os                   # Managing folders
-import genanki              # For all anki stuff
-import streamlit as st      # For running this web application
-from openai import OpenAI   # For OpenAI model calls
-import urllib               # For parsing URL data
-import requests             # For LibreTranslate API calls
-import base64               # for converting the audio file to base64 encoded string
-import gradio as gr         # For creating the Gradio UI
-import pandas as pd         # For handling pandas operations
-from dotenv import load_dotenv # For loading environment variables - see https://pypi.org/project/python-dotenv/
-import io
-from agents import Agent, Runner    # Agentic AI stuff
-from agents.extensions.models.litellm_model import LitellmModel # For using other models
+import json                     # Managing JSON objects - Not used right now
+import os                       # Managing folders
+import genanki                  # For all anki stuff - Not used right now
+from openai import OpenAI       # For OpenAI model calls
+import urllib                   # For parsing URL data - Not used right now
+import requests                 # For LibreTranslate API calls - Not used right now
+import base64                   # for converting the audio file to base64 encoded string
+import gradio as gr             # For creating the Gradio UI
+from dotenv import load_dotenv  # For loading environment variables - see https://pypi.org/project/python-dotenv/
+
+# Other imports
+import io                                                       # For working with byte/audio inputs
+from agents import Agent, Runner                                # Agentic AI stuff
+from agents.extensions.models.litellm_model import LitellmModel # For using other models with the agent
 
 # Custom module imports
 # DuckDB flashcard table
