@@ -107,7 +107,7 @@ def update_DB(duckdb_table, new_table):
 
 st.title("Flashcards Table")
 
-st.write("Here are the flashcards you have created so far.")
+
 
 # Informational stuff
 st.sidebar.info("Informational Links")
@@ -129,6 +129,8 @@ except:
     #table = db_table.create_flashcards_DB()
 else:
 
+    # Only show certain buttons when the database is populated
+
     # Show an editable table
     # TODO - add delete button to delete selected rows
     df = st.data_editor(
@@ -139,22 +141,29 @@ else:
                 "Delete": st.column_config.CheckboxColumn("Delete")
             }
         )
+    
+    if df.empty:
+        st.write("No flashcards here!")
+    else:
+        st.write("Here are the flashcards you have created so far.")
 
-    # Update button
-    update_button = st.button("Update DB")
+    if not df.empty:
+        # Update button
+        update_button = st.button("Update DB")
 
-    # If the button is pressed, update the DB with the changes shown in the data editor
-    if update_button:
-        # Update DB
-        # Do not include rows that have the Delete checkbox
-        modified_df = df[df["delete"] == False]
-        update_DB(duckdb_table=db_table, new_table=modified_df)
+        # If the button is pressed, update the DB with the changes shown in the data editor
+        if update_button:
+            # Update DB
+            # Do not include rows that have the Delete checkbox checked.
+            modified_df = df[df["delete"] == False]
+            update_DB(duckdb_table=db_table, new_table=modified_df)
 
 
     # Agentic AI stuff
-    word = st.selectbox("Select a word", df['word'])
-    agentic_model = st.selectbox("Select a model", model_list)
-    agentic_translate_button = st.button("Translate word")
+    if not df.empty:
+        word = st.selectbox("Select a word", df['word'])
+        agentic_model = st.selectbox("Select a model", model_list)
+        agentic_translate_button = st.button("Translate word")
 
-    if agentic_translate_button:
-        run_translation_agent(word, agentic_model)
+        if agentic_translate_button:
+            run_translation_agent(word, agentic_model)
