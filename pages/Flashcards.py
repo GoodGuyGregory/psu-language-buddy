@@ -107,7 +107,8 @@ model_list = ['gpt-4.1', 'gpt-4o', "claude-sonnet-4.5", 'test model']
 # ======================================================================
 # Update the whole DB using the changes specified by the user
 def update_DB(duckdb_table: flashcard_table.DuckDB_Table, new_table: pd.DataFrame):
-    duckdb_table.update_DB_editor(new_table)
+    duckdb_table.update_DB_editor(new_table)    # Update the table
+    st.rerun()                                  # Update the table after the user clicks the button
 # ======================================================================
 
 st.title("Flashcards Table")
@@ -125,6 +126,9 @@ st.sidebar.write("This project requires the Python library for the free and open
 st.sidebar.write("Language Buddy is not officially associated with LibreTranslate or its products.")
 st.sidebar.link_button("LibreTranslate official website", "https://libretranslate.com/")
 st.sidebar.link_button("pypi.org link", "https://pypi.org/project/libretranslate/")
+
+# # Info about not recording or uploading unwanted or confidential info
+st.sidebar.warning("Please do not record or upload unwanted or confidential information.")
 
 # Read the flashcards table and show it
 try:
