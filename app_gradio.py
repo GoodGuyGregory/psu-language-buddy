@@ -273,6 +273,8 @@ with gr.Blocks(title="Language Buddy", analytics_enabled=False) as demo:
     with gr.Tab("View flashcards"):
         gr.Markdown("# Flashcards Table")
 
+        gr.Markdown("This page is a work in progress. You will eventually be able to add, update, and delete flashcards.")
+
         # Load the flashcard table from the DB
         # Currently supports Japanese - Spanish support to come soon
         flashcard_table_main, fc_table_df = load_fc_table()
