@@ -136,7 +136,7 @@ def create_anki_deck(table_rows):
 
 
 # Given an audio file (recorded or uploaded) - have an AI model give feedback
-def provide_speech_feedback(openai, speech_file, lang_name):
+def provide_speech_feedback(openai: OpenAI, speech_file, lang_name: str):
     # Base 64 encode the audio file (using the bytes values) and decode using utf-8
         encoded_audio = base64.b64encode(speech_file.getvalue()).decode('utf-8')
 

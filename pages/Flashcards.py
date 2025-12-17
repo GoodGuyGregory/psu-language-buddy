@@ -28,6 +28,7 @@ from pages.duckdb_fc import flashcard_table                     # DuckDB table
 from agents import Agent, Runner                                # Agentic AI stuff
 from agents.extensions.models.litellm_model import LitellmModel # For using other models
 import os                                                       # For getting environment variables
+import pandas as pd
 # ======================================================================
 
 # Name of database
@@ -105,7 +106,7 @@ model_list = ['gpt-4.1', 'gpt-4o', "claude-sonnet-4.5", 'test model']
 
 # ======================================================================
 # Update the whole DB using the changes specified by the user
-def update_DB(duckdb_table, new_table):
+def update_DB(duckdb_table: flashcard_table.DuckDB_Table, new_table: pd.DataFrame):
     duckdb_table.update_DB_editor(new_table)
 # ======================================================================
 
