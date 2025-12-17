@@ -151,6 +151,7 @@ else:
         st.write("No flashcards here!")
     else:
         st.write("Here are the flashcards you have created so far.")
+        st.write("To delete a flashcard, check the checkbox in the delete column for the specific flashcard and click \"Update DB\".")
 
     if not df.empty:
         # Update button
@@ -166,6 +167,8 @@ else:
 
     # Agentic AI stuff
     if not df.empty:
+        st.header("Translate/Learn more")
+        st.write("Learn more about a specific word and decide which LLM you want to use.")
         word = st.selectbox("Select a word", df['word'])
         agentic_model = st.selectbox("Select a model", model_list)
         agentic_translate_button = st.button("Translate word")
